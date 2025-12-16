@@ -174,6 +174,15 @@ public class MainActivity extends AppCompatActivity {
         chart.getDescription().setYOffset(-12f * density);
         chart.post(() -> chart.getDescription().setPosition(chart.getWidth() / 2f, 24f * density));
 
+//        float density = getResources().getDisplayMetrics().density;
+//        barChart.getDescription().setEnabled(true);
+//        barChart.getDescription().setText(chartTitle);
+//        barChart.getDescription().setTextColor(Color.DKGRAY);
+//        barChart.getDescription().setTextSize(12f);
+//        barChart.getDescription().setYOffset(-12f * density);
+//        barChart.post(() -> barChart.getDescription().setPosition(barChart.getWidth() / 2f, 24f * density));
+        barChart.getDescription().setEnabled(false);
+        barChart.getDescription().setText("");
         // X轴设置
         XAxis xAxis = chart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);

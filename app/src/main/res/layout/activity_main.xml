@@ -36,10 +36,10 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="保存 PNG"
-            android:textSize="14sp"
-            android:backgroundTint="#4CD964"
+            android:layout_marginEnd="4dp"
+            android:text="PNG"
+            android:textSize="12sp"
+            android:backgroundTint="#2C3E50"
             android:textColor="#FFFFFF" />
 
         <Button
@@ -47,10 +47,22 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="保存 PDF (矢量)"
-            android:textSize="14sp"
-            android:backgroundTint="#5AC8FA"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            android:text="PDF"
+            android:textSize="12sp"
+            android:backgroundTint="#7F8C8D"
+            android:textColor="#FFFFFF" />
+
+        <Button
+            android:id="@+id/btnSaveSvg"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:text="SVG"
+            android:textSize="12sp"
+            android:backgroundTint="#E74C3C"
             android:textColor="#FFFFFF" />
 
     </LinearLayout>

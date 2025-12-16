@@ -11,19 +11,47 @@
     tools:context=".MainActivity">
 
     <TextView
+        android:id="@+id/tvChartTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="分组柱状图生成器"
         android:textSize="18sp"
         android:textStyle="bold"
         android:textColor="#333333"
         android:gravity="center"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="12dp" />
 
-    <com.github.mikephil.charting.charts.BarChart
-        android:id="@+id/barChart"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="220dp" />
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvYAxisLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:rotation="-90"
+            android:textSize="12sp"
+            android:textColor="#555555"
+            android:layout_marginEnd="8dp" />
+
+        <com.github.mikephil.charting.charts.BarChart
+            android:id="@+id/barChart"
+            android:layout_width="0dp"
+            android:layout_height="240dp"
+            android:layout_weight="1" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvXAxisLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textSize="12sp"
+        android:textColor="#555555"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="8dp" />
 
     <LinearLayout
         android:layout_width="match_parent"

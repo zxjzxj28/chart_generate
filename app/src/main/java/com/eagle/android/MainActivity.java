@@ -24,6 +24,8 @@ import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,11 +45,11 @@ public class MainActivity extends AppCompatActivity {
     // 数据系列名称（图例显示）
     private final String[] seriesNames = {"公司A", "公司B", "公司C"};
 
-    // 数据系列颜色 (绿色, 蓝色, 黄色)
+    // 数据系列颜色 (学术论文配色 - 低饱和度、高对比度、适合黑白打印)
     private final int[] seriesColors = {
-            Color.parseColor("#4CD964"),  // 绿色
-            Color.parseColor("#5AC8FA"),  // 蓝色
-            Color.parseColor("#E8F48C")   // 黄色
+            Color.parseColor("#2C3E50"),  // 深蓝灰 - 主色调
+            Color.parseColor("#E74C3C"),  // 砖红色 - 对比色
+            Color.parseColor("#7F8C8D")   // 中性灰 - 辅助色
     };
 
     // 各系列数据值 - 每行对应一个系列，列数需与xLabels长度一致
@@ -83,12 +85,14 @@ public class MainActivity extends AppCompatActivity {
         barChart = findViewById(R.id.barChart);
         Button btnSavePng = findViewById(R.id.btnSavePng);
         Button btnSavePdf = findViewById(R.id.btnSavePdf);
+        Button btnSaveSvg = findViewById(R.id.btnSaveSvg);
 
         setupChart();
         loadChartData();
 
         btnSavePng.setOnClickListener(v -> saveChartAsPng());
         btnSavePdf.setOnClickListener(v -> saveChartAsPdf());
+        btnSaveSvg.setOnClickListener(v -> saveChartAsSvg());
     }
 
     /**
@@ -319,5 +323,155 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "保存失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             e.printStackTrace();
         }
+    }
+
+    /**
+     * 保存图表为SVG矢量图
+     */
+    private void saveChartAsSvg() {
+        try {
+            // 生成SVG内容
+            String svgContent = generateSvgContent();
+
+            // 生成文件名
+            String fileName = outputFilePrefix + "_" + System.currentTimeMillis() + ".svg";
+
+            // 使用MediaStore保存SVG
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+            values.put(MediaStore.MediaColumns.MIME_TYPE, "image/svg+xml");
+            values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/Charts");
+
+            Uri uri = getContentResolver().insert(MediaStore.Files.getContentUri("external"), values);
+
+            if (uri != null) {
+                try (OutputStream outputStream = getContentResolver().openOutputStream(uri);
+                     OutputStreamWriter writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
+                    if (writer != null) {
+                        writer.write(svgContent);
+                        String message = "SVG矢量图已保存!\n路径: Documents/Charts/" + fileName;
+                        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+                    }
+                }
+            } else {
+                Toast.makeText(this, "创建文件失败", Toast.LENGTH_SHORT).show();
+            }
+
+        } catch (Exception e) {
+            Toast.makeText(this, "保存失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 生成SVG内容
+     */
+    private String generateSvgContent() {
+        StringBuilder svg = new StringBuilder();
+
+        // SVG尺寸和边距
+        int width = outputWidth;
+        int height = outputHeight;
+        int paddingLeft = 80;
+        int paddingRight = 150;
+        int paddingTop = 60;
+        int paddingBottom = 80;
+
+        int chartWidth = width - paddingLeft - paddingRight;
+        int chartHeight = height - paddingTop - paddingBottom;
+
+        int groupCount = xLabels.length;
+        int seriesCount = seriesNames.length;
+
+        // 计算柱状图参数
+        float groupWidth = (float) chartWidth / groupCount;
+        float groupSpace = groupWidth * 0.20f;
+        float barSpace = groupWidth * 0.02f;
+        float barWidth = (groupWidth - groupSpace) / seriesCount - barSpace;
+
+        // SVG头部
+        svg.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        svg.append(String.format("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\">\n",
+                width, height, width, height));
+
+        // 白色背景
+        svg.append(String.format("  <rect width=\"%d\" height=\"%d\" fill=\"white\"/>\n", width, height));
+
+        // 样式定义
+        svg.append("  <style>\n");
+        svg.append("    .axis-text { font-family: Arial, sans-serif; font-size: 12px; fill: #444444; }\n");
+        svg.append("    .legend-text { font-family: Arial, sans-serif; font-size: 11px; fill: #444444; }\n");
+        svg.append("    .grid-line { stroke: #E0E0E0; stroke-width: 0.5; }\n");
+        svg.append("  </style>\n");
+
+        // 绘制网格线
+        float maxValue = yAxisMax > 0 ? yAxisMax : getMaxValue();
+        int gridCount = 5;
+        for (int i = 0; i <= gridCount; i++) {
+            float y = paddingTop + chartHeight - (chartHeight * i / gridCount);
+            svg.append(String.format("  <line x1=\"%d\" y1=\"%.1f\" x2=\"%d\" y2=\"%.1f\" class=\"grid-line\"/>\n",
+                    paddingLeft, y, paddingLeft + chartWidth, y));
+
+            // Y轴标签
+            float value = maxValue * i / gridCount;
+            svg.append(String.format("  <text x=\"%d\" y=\"%.1f\" class=\"axis-text\" text-anchor=\"end\">%.0f</text>\n",
+                    paddingLeft - 10, y + 4, value));
+        }
+
+        // 绘制柱状图
+        for (int g = 0; g < groupCount; g++) {
+            float groupX = paddingLeft + g * groupWidth + groupSpace / 2;
+
+            for (int s = 0; s < seriesCount; s++) {
+                float barX = groupX + s * (barWidth + barSpace);
+                float barHeight = (seriesData[s][g] / maxValue) * chartHeight;
+                float barY = paddingTop + chartHeight - barHeight;
+
+                String color = String.format("#%06X", (0xFFFFFF & seriesColors[s]));
+
+                svg.append(String.format("  <rect x=\"%.1f\" y=\"%.1f\" width=\"%.1f\" height=\"%.1f\" fill=\"%s\"/>\n",
+                        barX, barY, barWidth, barHeight, color));
+            }
+
+            // X轴标签
+            float labelX = groupX + (groupWidth - groupSpace) / 2;
+            svg.append(String.format("  <text x=\"%.1f\" y=\"%d\" class=\"axis-text\" text-anchor=\"middle\">%s</text>\n",
+                    labelX, paddingTop + chartHeight + 25, xLabels[g]));
+        }
+
+        // 绘制图例
+        int legendX = width - paddingRight + 20;
+        int legendY = paddingTop + 20;
+        int legendItemHeight = 25;
+
+        for (int s = 0; s < seriesCount; s++) {
+            int itemY = legendY + s * legendItemHeight;
+            String color = String.format("#%06X", (0xFFFFFF & seriesColors[s]));
+
+            // 图例色块
+            svg.append(String.format("  <rect x=\"%d\" y=\"%d\" width=\"15\" height=\"15\" fill=\"%s\"/>\n",
+                    legendX, itemY, color));
+
+            // 图例文字
+            svg.append(String.format("  <text x=\"%d\" y=\"%d\" class=\"legend-text\">%s</text>\n",
+                    legendX + 22, itemY + 12, seriesNames[s]));
+        }
+
+        svg.append("</svg>");
+
+        return svg.toString();
+    }
+
+    /**
+     * 获取数据最大值
+     */
+    private float getMaxValue() {
+        float max = 0;
+        for (float[] series : seriesData) {
+            for (float value : series) {
+                if (value > max) max = value;
+            }
+        }
+        return max * 1.1f; // 留10%余量
     }
 }

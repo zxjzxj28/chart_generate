@@ -4,12 +4,14 @@ import android.content.ContentValues;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.pdf.PdfDocument;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,6 +24,7 @@ import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
+import com.github.mikephil.charting.formatter.ValueFormatter;
 
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -32,48 +35,84 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private BarChart barChart;
+    private BarChart secondaryBarChart;
+    private TextView tvChartTitle;
+    private TextView tvXAxisLabel;
+    private TextView tvYAxisLabel;
+    private TextView tvSecondaryTitle;
 
     // ==================== 数据配置区域 ====================
     // 修改以下变量即可生成不同的图表
 
-    // X轴标签（年份/类别）
-    private final String[] xLabels = {
-            "1990年", "1991年", "1992年", "1993年", "1994年",
-//            "1995年", "1996年", "1997年", "1998年", "1999年"
-    };
+    private final ChartSpec primarySpec = new ChartSpec(
+            "2024年主要销售渠道业绩（亿元）",
+            "",
+            "",
+            new String[]{
+                    "电商渠道", "线下门店", "批发分销", "直销客户", "合作伙伴"
+            },
+            new String[]{"销售额"},
+            new int[]{Color.parseColor("#4A90E2")},
+            new float[][]{{128f, 152f, 141f, 167f, 158f}},
+            180f,
+            "single_series_bar_chart",
+            1920,
+            1080
+    );
 
-    // 数据系列名称（图例显示）
-    private final String[] seriesNames = {"公司A", "公司B", "公司C"};
+    private final ChartSpec secondarySpec = new ChartSpec(
+            "2024年核心产品线销量（万件）",
+            "",
+            "",
+            new String[]{
+                    "旗舰手机", "轻薄本", "平板", "智能穿戴", "智能家居"
+            },
+            new String[]{"销量"},
+            new int[]{Color.parseColor("#5B8FF9")},
+            new float[][]{{86f, 74f, 65f, 58f, 50f}},
+            100f,
+            "single_series_product_chart",
+            1920,
+            1080
+    );
 
-    // 数据系列颜色 (学术论文配色 - 低饱和度、高对比度、适合黑白打印)
-    private final int[] seriesColors = {
-            Color.parseColor("#2C3E50"),  // 深蓝灰 - 主色调
-            Color.parseColor("#E74C3C"),  // 砖红色 - 对比色
-            Color.parseColor("#7F8C8D")   // 中性灰 - 辅助色
-    };
+    private static class ChartSpec {
+        final String chartTitle;
+        final String xAxisLabel;
+        final String yAxisLabel;
+        final String[] xLabels;
+        final String[] seriesNames;
+        final int[] seriesColors;
+        final float[][] seriesData;
+        final float yAxisMax;
+        final String outputFilePrefix;
+        final int outputWidth;
+        final int outputHeight;
 
-    // 各系列数据值 - 每行对应一个系列，列数需与xLabels长度一致
-    private final float[][] seriesData = {
-            // 公司A数据
-            {10f, 43f, 79f, 82f, 44f},
-//            {10f, 43f, 79f, 82f, 44f, 12f, 18f, 30f, 17f, 11f},
-            // 公司B数据
-            {39f, 7f, 55f, 26f, 80f},
-//            , 51f, 58f, 47f, 9f, 40f
-            // 公司C数据
-            {13f, 55f, 33f, 96f, 42f}
-//            61f, 25f, 41f, 48f, 17f
-    };
-
-    // Y轴最大值（设为0则自动计算）
-    private final float yAxisMax = 100f;
-
-    // 输出图片文件名前缀
-    private final String outputFilePrefix = "grouped_bar_chart";
-
-    // 输出图片尺寸（16:9比例）
-    private final int outputWidth = 1920;
-    private final int outputHeight = 1080;
+        ChartSpec(String chartTitle,
+                  String xAxisLabel,
+                  String yAxisLabel,
+                  String[] xLabels,
+                  String[] seriesNames,
+                  int[] seriesColors,
+                  float[][] seriesData,
+                  float yAxisMax,
+                  String outputFilePrefix,
+                  int outputWidth,
+                  int outputHeight) {
+            this.chartTitle = chartTitle;
+            this.xAxisLabel = xAxisLabel;
+            this.yAxisLabel = yAxisLabel;
+            this.xLabels = xLabels;
+            this.seriesNames = seriesNames;
+            this.seriesColors = seriesColors;
+            this.seriesData = seriesData;
+            this.yAxisMax = yAxisMax;
+            this.outputFilePrefix = outputFilePrefix;
+            this.outputWidth = outputWidth;
+            this.outputHeight = outputHeight;
+        }
+    }
 
     // ==================== 数据配置区域结束 ====================
 
@@ -83,36 +122,60 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         barChart = findViewById(R.id.barChart);
+        secondaryBarChart = findViewById(R.id.secondaryBarChart);
+        tvChartTitle = findViewById(R.id.tvChartTitle);
+        tvXAxisLabel = findViewById(R.id.tvXAxisLabel);
+        tvYAxisLabel = findViewById(R.id.tvYAxisLabel);
+        tvSecondaryTitle = findViewById(R.id.tvSecondaryTitle);
         Button btnSavePng = findViewById(R.id.btnSavePng);
         Button btnSavePdf = findViewById(R.id.btnSavePdf);
         Button btnSaveSvg = findViewById(R.id.btnSaveSvg);
+        Button btnSaveSecondaryPng = findViewById(R.id.btnSaveSecondaryPng);
+        Button btnSaveSecondaryPdf = findViewById(R.id.btnSaveSecondaryPdf);
 
-        setupChart();
-        loadChartData();
+        tvChartTitle.setText(primarySpec.chartTitle);
+        tvXAxisLabel.setText(primarySpec.xAxisLabel);
+        tvYAxisLabel.setText(primarySpec.yAxisLabel);
+        tvSecondaryTitle.setText(secondarySpec.chartTitle);
 
-        btnSavePng.setOnClickListener(v -> saveChartAsPng());
-        btnSavePdf.setOnClickListener(v -> saveChartAsPdf());
-        btnSaveSvg.setOnClickListener(v -> saveChartAsSvg());
+        setupChart(barChart, primarySpec);
+        setupChart(secondaryBarChart, secondarySpec);
+        loadChartData(barChart, primarySpec);
+        loadChartData(secondaryBarChart, secondarySpec);
+
+        btnSavePng.setOnClickListener(v -> saveChartAsPng(barChart, primarySpec));
+        btnSavePdf.setOnClickListener(v -> saveChartAsPdf(barChart, primarySpec));
+        btnSaveSvg.setOnClickListener(v -> saveChartAsSvg(primarySpec));
+        btnSaveSecondaryPng.setOnClickListener(v -> saveChartAsPng(secondaryBarChart, secondarySpec));
+        btnSaveSecondaryPdf.setOnClickListener(v -> saveChartAsPdf(secondaryBarChart, secondarySpec));
     }
 
     /**
      * 配置图表基本属性
      */
-    private void setupChart() {
+    private void setupChart(BarChart chart, ChartSpec spec) {
         // 基本设置
-        barChart.getDescription().setEnabled(false);
-        barChart.setDrawGridBackground(false);
-        barChart.setDrawBarShadow(false);
-        barChart.setHighlightFullBarEnabled(false);
-        barChart.setPinchZoom(false);
-        barChart.setScaleEnabled(false);
-        barChart.setDoubleTapToZoomEnabled(false);
-        barChart.setBackgroundColor(Color.WHITE);
-        barChart.setExtraBottomOffset(10f);
-        barChart.setExtraRightOffset(50f);
+        chart.setDrawGridBackground(false);
+        chart.setDrawBarShadow(false);
+        chart.setHighlightFullBarEnabled(false);
+        chart.setPinchZoom(false);
+        chart.setScaleEnabled(false);
+        chart.setDoubleTapToZoomEnabled(false);
+        chart.setBackgroundColor(Color.WHITE);
+        chart.setExtraTopOffset(45f);
+        chart.setExtraBottomOffset(40f);
+        chart.setExtraRightOffset(50f);
+
+        float density = getResources().getDisplayMetrics().density;
+        chart.getDescription().setEnabled(true);
+        chart.getDescription().setText(spec.chartTitle);
+        chart.getDescription().setTextColor(Color.DKGRAY);
+        chart.getDescription().setTextSize(12f);
+        chart.getDescription().setYOffset(-12f * density);
+        chart.post(() -> chart.getDescription().setPosition(chart.getWidth() / 2f, 24f * density));
 
         // X轴设置
-        XAxis xAxis = barChart.getXAxis();
+        XAxis xAxis = chart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(false);
         xAxis.setDrawAxisLine(true);
@@ -120,18 +183,18 @@ public class MainActivity extends AppCompatActivity {
         xAxis.setGranularity(1f);
         xAxis.setTextSize(10f);
         xAxis.setTextColor(Color.DKGRAY);
-        xAxis.setValueFormatter(new IndexAxisValueFormatter(xLabels));
+        xAxis.setValueFormatter(new IndexAxisValueFormatter(spec.xLabels));
         xAxis.setLabelRotationAngle(0f);
         xAxis.setCenterAxisLabels(true);
 
         // 左侧Y轴设置
-        YAxis leftAxis = barChart.getAxisLeft();
+        YAxis leftAxis = chart.getAxisLeft();
         leftAxis.setDrawGridLines(true);
         leftAxis.setGridColor(Color.parseColor("#E0E0E0"));
         leftAxis.setGridLineWidth(0.5f);
         leftAxis.setAxisMinimum(0f);
-        if (yAxisMax > 0) {
-            leftAxis.setAxisMaximum(yAxisMax);
+        if (spec.yAxisMax > 0) {
+            leftAxis.setAxisMaximum(spec.yAxisMax);
         }
         leftAxis.setTextSize(11f);
         leftAxis.setTextColor(Color.DKGRAY);
@@ -139,10 +202,10 @@ public class MainActivity extends AppCompatActivity {
         leftAxis.setLabelCount(6, false);
 
         // 禁用右侧Y轴
-        barChart.getAxisRight().setEnabled(false);
+        chart.getAxisRight().setEnabled(false);
 
         // 图例设置
-        Legend legend = barChart.getLegend();
+        Legend legend = chart.getLegend();
         legend.setEnabled(true);
         legend.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
         legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.RIGHT);
@@ -161,9 +224,9 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 加载图表数据
      */
-    private void loadChartData() {
-        int groupCount = xLabels.length;
-        int seriesCount = seriesNames.length;
+    private void loadChartData(BarChart chart, ChartSpec spec) {
+        int groupCount = spec.xLabels.length;
+        int seriesCount = spec.seriesNames.length;
 
         // 创建各系列的数据集
         List<BarDataSet> dataSets = new ArrayList<>();
@@ -171,12 +234,20 @@ public class MainActivity extends AppCompatActivity {
         for (int s = 0; s < seriesCount; s++) {
             List<BarEntry> entries = new ArrayList<>();
             for (int i = 0; i < groupCount; i++) {
-                entries.add(new BarEntry(i, seriesData[s][i]));
+                entries.add(new BarEntry(i, spec.seriesData[s][i]));
             }
 
-            BarDataSet dataSet = new BarDataSet(entries, seriesNames[s]);
-            dataSet.setColor(seriesColors[s]);
-            dataSet.setDrawValues(false);  // 不显示柱子上的数值
+            BarDataSet dataSet = new BarDataSet(entries, spec.seriesNames[s]);
+            dataSet.setColor(spec.seriesColors[s]);
+            dataSet.setDrawValues(true);
+            dataSet.setValueTextColor(Color.DKGRAY);
+            dataSet.setValueTextSize(11f);
+            dataSet.setValueFormatter(new ValueFormatter() {
+                @Override
+                public String getBarLabel(BarEntry barEntry) {
+                    return String.format("%.0f", barEntry.getY());
+                }
+            });
             dataSets.add(dataSet);
         }
 
@@ -189,48 +260,49 @@ public class MainActivity extends AppCompatActivity {
         float barWidth = (1f - groupSpace) / seriesCount - barSpace;
 
         barData.setBarWidth(barWidth);
-        barChart.setData(barData);
+        chart.setData(barData);
 
         // 设置X轴范围
-        barChart.getXAxis().setAxisMinimum(0f);
-        barChart.getXAxis().setAxisMaximum(groupCount);
+        chart.getXAxis().setAxisMinimum(0f);
+        chart.getXAxis().setAxisMaximum(groupCount);
 
         // 分组柱状图
-        barChart.groupBars(0f, groupSpace, barSpace);
+        chart.groupBars(0f, groupSpace, barSpace);
 
         // 刷新图表
-        barChart.invalidate();
+        chart.invalidate();
     }
 
     /**
      * 保存图表为PNG图片
      */
-    private void saveChartAsPng() {
+    private void saveChartAsPng(BarChart chart, ChartSpec spec) {
         try {
             // 检查图表是否已渲染
-            if (barChart.getWidth() <= 0 || barChart.getHeight() <= 0) {
+            if (chart.getWidth() <= 0 || chart.getHeight() <= 0) {
                 Toast.makeText(this, "图表尚未渲染完成，请稍后再试", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             // 创建指定尺寸的Bitmap
-            Bitmap bitmap = Bitmap.createBitmap(outputWidth, outputHeight, Bitmap.Config.ARGB_8888);
+            Bitmap bitmap = Bitmap.createBitmap(spec.outputWidth, spec.outputHeight, Bitmap.Config.ARGB_8888);
             Canvas canvas = new Canvas(bitmap);
             canvas.drawColor(Color.WHITE);
 
             // 保存原始尺寸
-            int originalWidth = barChart.getWidth();
-            int originalHeight = barChart.getHeight();
+            int originalWidth = chart.getWidth();
+            int originalHeight = chart.getHeight();
 
             // 临时调整图表尺寸并绘制
-            barChart.layout(0, 0, outputWidth, outputHeight);
-            barChart.draw(canvas);
+            chart.layout(0, 0, spec.outputWidth, spec.outputHeight);
+            chart.draw(canvas);
+            drawChartAnnotations(canvas, chart, spec);
 
             // 恢复原始尺寸
-            barChart.layout(0, 0, originalWidth, originalHeight);
+            chart.layout(0, 0, originalWidth, originalHeight);
 
             // 生成文件名
-            String fileName = outputFilePrefix + "_" + System.currentTimeMillis() + ".png";
+            String fileName = spec.outputFilePrefix + "_" + System.currentTimeMillis() + ".png";
 
             // 使用MediaStore保存图片（适用于Android 10+）
             ContentValues values = new ContentValues();
@@ -260,10 +332,10 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 保存图表为PDF矢量图
      */
-    private void saveChartAsPdf() {
+    private void saveChartAsPdf(BarChart chart, ChartSpec spec) {
         try {
             // 检查图表是否已渲染
-            if (barChart.getWidth() <= 0 || barChart.getHeight() <= 0) {
+            if (chart.getWidth() <= 0 || chart.getHeight() <= 0) {
                 Toast.makeText(this, "图表尚未渲染完成，请稍后再试", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -272,7 +344,7 @@ public class MainActivity extends AppCompatActivity {
             PdfDocument document = new PdfDocument();
 
             // 创建页面信息（使用配置的尺寸）
-            PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(outputWidth, outputHeight, 1).create();
+            PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(spec.outputWidth, spec.outputHeight, 1).create();
             PdfDocument.Page page = document.startPage(pageInfo);
 
             // 获取PDF页面的Canvas
@@ -280,21 +352,22 @@ public class MainActivity extends AppCompatActivity {
             canvas.drawColor(Color.WHITE);
 
             // 保存原始尺寸
-            int originalWidth = barChart.getWidth();
-            int originalHeight = barChart.getHeight();
+            int originalWidth = chart.getWidth();
+            int originalHeight = chart.getHeight();
 
             // 临时调整图表尺寸并绘制到PDF
-            barChart.layout(0, 0, outputWidth, outputHeight);
-            barChart.draw(canvas);
+            chart.layout(0, 0, spec.outputWidth, spec.outputHeight);
+            chart.draw(canvas);
+            drawChartAnnotations(canvas, chart, spec);
 
             // 恢复原始尺寸
-            barChart.layout(0, 0, originalWidth, originalHeight);
+            chart.layout(0, 0, originalWidth, originalHeight);
 
             // 结束页面
             document.finishPage(page);
 
             // 生成文件名
-            String fileName = outputFilePrefix + "_" + System.currentTimeMillis() + ".pdf";
+            String fileName = spec.outputFilePrefix + "_" + System.currentTimeMillis() + ".pdf";
 
             // 使用MediaStore保存PDF（适用于Android 10+）
             ContentValues values = new ContentValues();
@@ -328,13 +401,13 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 保存图表为SVG矢量图
      */
-    private void saveChartAsSvg() {
+    private void saveChartAsSvg(ChartSpec spec) {
         try {
             // 生成SVG内容
-            String svgContent = generateSvgContent();
+            String svgContent = generateSvgContent(spec);
 
             // 生成文件名
-            String fileName = outputFilePrefix + "_" + System.currentTimeMillis() + ".svg";
+            String fileName = spec.outputFilePrefix + "_" + System.currentTimeMillis() + ".svg";
 
             // 使用MediaStore保存SVG
             ContentValues values = new ContentValues();
@@ -364,24 +437,49 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
+     * 在导出的画布上绘制标题与轴标签
+     */
+    private void drawChartAnnotations(Canvas canvas, BarChart chart, ChartSpec spec) {
+        Paint titlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        titlePaint.setColor(Color.DKGRAY);
+        titlePaint.setTextAlign(Paint.Align.CENTER);
+        titlePaint.setTextSize(48f);
+        canvas.drawText(spec.chartTitle, spec.outputWidth / 2f, 60f, titlePaint);
+
+        Paint labelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        labelPaint.setColor(Color.DKGRAY);
+        labelPaint.setTextAlign(Paint.Align.CENTER);
+        labelPaint.setTextSize(36f);
+
+        canvas.drawText(spec.xAxisLabel, spec.outputWidth / 2f, spec.outputHeight - 25f, labelPaint);
+
+        canvas.save();
+        float contentLeft = chart.getViewPortHandler().contentLeft();
+        float contentTop = chart.getViewPortHandler().contentTop();
+        canvas.restore();
+        labelPaint.setTextAlign(Paint.Align.LEFT);
+        canvas.drawText(spec.yAxisLabel, contentLeft + 5f, Math.max(40f, contentTop - 20f), labelPaint);
+    }
+
+    /**
      * 生成SVG内容
      */
-    private String generateSvgContent() {
+    private String generateSvgContent(ChartSpec spec) {
         StringBuilder svg = new StringBuilder();
 
         // SVG尺寸和边距
-        int width = outputWidth;
-        int height = outputHeight;
+        int width = spec.outputWidth;
+        int height = spec.outputHeight;
         int paddingLeft = 80;
         int paddingRight = 150;
-        int paddingTop = 60;
-        int paddingBottom = 80;
+        int paddingTop = 90;
+        int paddingBottom = 110;
 
         int chartWidth = width - paddingLeft - paddingRight;
         int chartHeight = height - paddingTop - paddingBottom;
 
-        int groupCount = xLabels.length;
-        int seriesCount = seriesNames.length;
+        int groupCount = spec.xLabels.length;
+        int seriesCount = spec.seriesNames.length;
 
         // 计算柱状图参数
         float groupWidth = (float) chartWidth / groupCount;
@@ -391,7 +489,8 @@ public class MainActivity extends AppCompatActivity {
 
         // SVG头部
         svg.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        svg.append(String.format("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\">\n",
+        svg.append(String.format(
+                "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.1\" width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\">\n",
                 width, height, width, height));
 
         // 白色背景
@@ -402,19 +501,35 @@ public class MainActivity extends AppCompatActivity {
         svg.append("    .axis-text { font-family: Arial, sans-serif; font-size: 12px; fill: #444444; }\n");
         svg.append("    .legend-text { font-family: Arial, sans-serif; font-size: 11px; fill: #444444; }\n");
         svg.append("    .grid-line { stroke: #E0E0E0; stroke-width: 0.5; }\n");
+        svg.append("    .title-text { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #333333; }\n");
+        svg.append("    .label-text { font-family: Arial, sans-serif; font-size: 13px; fill: #555555; }\n");
+        svg.append("    .value-text { font-family: Arial, sans-serif; font-size: 11px; fill: #444444; font-weight: bold; }\n");
         svg.append("  </style>\n");
 
+        // 标题和轴标签
+        svg.append(String.format(
+                "  <text x=\"%d\" y=\"%d\" class=\"title-text\" text-anchor=\"middle\">%s</text>\n",
+                width / 2, paddingTop - 35, escapeXml(spec.chartTitle)));
+        svg.append(String.format(
+                "  <text x=\"%d\" y=\"%d\" class=\"label-text\" text-anchor=\"middle\">%s</text>\n",
+                paddingLeft + chartWidth / 2, paddingTop + chartHeight + 45, escapeXml(spec.xAxisLabel)));
+        svg.append(String.format(
+                "  <text x=\"%d\" y=\"%d\" class=\"label-text\" text-anchor=\"middle\">%s</text>\n",
+                paddingLeft, paddingTop - 20, escapeXml(spec.yAxisLabel)));
+
         // 绘制网格线
-        float maxValue = yAxisMax > 0 ? yAxisMax : getMaxValue();
+        float maxValue = spec.yAxisMax > 0 ? spec.yAxisMax : getMaxValue(spec);
         int gridCount = 5;
         for (int i = 0; i <= gridCount; i++) {
             float y = paddingTop + chartHeight - (chartHeight * i / gridCount);
-            svg.append(String.format("  <line x1=\"%d\" y1=\"%.1f\" x2=\"%d\" y2=\"%.1f\" class=\"grid-line\"/>\n",
+            svg.append(String.format(
+                    "  <line x1=\"%d\" y1=\"%.1f\" x2=\"%d\" y2=\"%.1f\" class=\"grid-line\"/>\n",
                     paddingLeft, y, paddingLeft + chartWidth, y));
 
             // Y轴标签
             float value = maxValue * i / gridCount;
-            svg.append(String.format("  <text x=\"%d\" y=\"%.1f\" class=\"axis-text\" text-anchor=\"end\">%.0f</text>\n",
+            svg.append(String.format(
+                    "  <text x=\"%d\" y=\"%.1f\" class=\"axis-text\" text-anchor=\"end\">%.0f</text>\n",
                     paddingLeft - 10, y + 4, value));
         }
 
@@ -424,19 +539,26 @@ public class MainActivity extends AppCompatActivity {
 
             for (int s = 0; s < seriesCount; s++) {
                 float barX = groupX + s * (barWidth + barSpace);
-                float barHeight = (seriesData[s][g] / maxValue) * chartHeight;
+                float barHeight = (spec.seriesData[s][g] / maxValue) * chartHeight;
                 float barY = paddingTop + chartHeight - barHeight;
 
-                String color = String.format("#%06X", (0xFFFFFF & seriesColors[s]));
+                String color = String.format("#%06X", (0xFFFFFF & spec.seriesColors[s]));
 
-                svg.append(String.format("  <rect x=\"%.1f\" y=\"%.1f\" width=\"%.1f\" height=\"%.1f\" fill=\"%s\"/>\n",
+                svg.append(String.format(
+                        "  <rect x=\"%.1f\" y=\"%.1f\" width=\"%.1f\" height=\"%.1f\" fill=\"%s\"/>\n",
                         barX, barY, barWidth, barHeight, color));
+
+                float valueY = Math.max(paddingTop + 12f, barY - 6f);
+                svg.append(String.format(
+                        "  <text x=\"%.1f\" y=\"%.1f\" class=\"value-text\" text-anchor=\"middle\">%.0f</text>\n",
+                        barX + barWidth / 2f, valueY, spec.seriesData[s][g]));
             }
 
             // X轴标签
             float labelX = groupX + (groupWidth - groupSpace) / 2;
-            svg.append(String.format("  <text x=\"%.1f\" y=\"%d\" class=\"axis-text\" text-anchor=\"middle\">%s</text>\n",
-                    labelX, paddingTop + chartHeight + 25, xLabels[g]));
+            svg.append(String.format(
+                    "  <text x=\"%.1f\" y=\"%d\" class=\"axis-text\" text-anchor=\"middle\">%s</text>\n",
+                    labelX, paddingTop + chartHeight + 25, spec.xLabels[g]));
         }
 
         // 绘制图例
@@ -446,32 +568,42 @@ public class MainActivity extends AppCompatActivity {
 
         for (int s = 0; s < seriesCount; s++) {
             int itemY = legendY + s * legendItemHeight;
-            String color = String.format("#%06X", (0xFFFFFF & seriesColors[s]));
+            String color = String.format("#%06X", (0xFFFFFF & spec.seriesColors[s]));
 
             // 图例色块
-            svg.append(String.format("  <rect x=\"%d\" y=\"%d\" width=\"15\" height=\"15\" fill=\"%s\"/>\n",
+            svg.append(String.format(
+                    "  <rect x=\"%d\" y=\"%d\" width=\"15\" height=\"15\" fill=\"%s\"/>\n",
                     legendX, itemY, color));
 
             // 图例文字
-            svg.append(String.format("  <text x=\"%d\" y=\"%d\" class=\"legend-text\">%s</text>\n",
-                    legendX + 22, itemY + 12, seriesNames[s]));
+            svg.append(String.format(
+                    "  <text x=\"%d\" y=\"%d\" class=\"legend-text\">%s</text>\n",
+                    legendX + 22, itemY + 12, spec.seriesNames[s]));
         }
 
         svg.append("</svg>");
 
         return svg.toString();
     }
-
     /**
      * 获取数据最大值
      */
-    private float getMaxValue() {
+    private float getMaxValue(ChartSpec spec) {
         float max = 0;
-        for (float[] series : seriesData) {
+        for (float[] series : spec.seriesData) {
             for (float value : series) {
                 if (value > max) max = value;
             }
         }
         return max * 1.1f; // 留10%余量
+    }
+
+    private String escapeXml(String value) {
+        return value
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&apos;");
     }
 }

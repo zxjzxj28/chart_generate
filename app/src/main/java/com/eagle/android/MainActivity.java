@@ -391,7 +391,8 @@ public class MainActivity extends AppCompatActivity {
 
         // SVG头部
         svg.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        svg.append(String.format("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\">\n",
+        svg.append(String.format(
+                "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%d\" height=\"%d\" viewBox=\"0 0 %d %d\">\n",
                 width, height, width, height));
 
         // 白色背景
@@ -409,12 +410,14 @@ public class MainActivity extends AppCompatActivity {
         int gridCount = 5;
         for (int i = 0; i <= gridCount; i++) {
             float y = paddingTop + chartHeight - (chartHeight * i / gridCount);
-            svg.append(String.format("  <line x1=\"%d\" y1=\"%.1f\" x2=\"%d\" y2=\"%.1f\" class=\"grid-line\"/>\n",
+            svg.append(String.format(
+                    "  <line x1=\"%d\" y1=\"%.1f\" x2=\"%d\" y2=\"%.1f\" class=\"grid-line\"/>\n",
                     paddingLeft, y, paddingLeft + chartWidth, y));
 
             // Y轴标签
             float value = maxValue * i / gridCount;
-            svg.append(String.format("  <text x=\"%d\" y=\"%.1f\" class=\"axis-text\" text-anchor=\"end\">%.0f</text>\n",
+            svg.append(String.format(
+                    "  <text x=\"%d\" y=\"%.1f\" class=\"axis-text\" text-anchor=\"end\">%.0f</text>\n",
                     paddingLeft - 10, y + 4, value));
         }
 
@@ -429,13 +432,15 @@ public class MainActivity extends AppCompatActivity {
 
                 String color = String.format("#%06X", (0xFFFFFF & seriesColors[s]));
 
-                svg.append(String.format("  <rect x=\"%.1f\" y=\"%.1f\" width=\"%.1f\" height=\"%.1f\" fill=\"%s\"/>\n",
+                svg.append(String.format(
+                        "  <rect x=\"%.1f\" y=\"%.1f\" width=\"%.1f\" height=\"%.1f\" fill=\"%s\"/>\n",
                         barX, barY, barWidth, barHeight, color));
             }
 
             // X轴标签
             float labelX = groupX + (groupWidth - groupSpace) / 2;
-            svg.append(String.format("  <text x=\"%.1f\" y=\"%d\" class=\"axis-text\" text-anchor=\"middle\">%s</text>\n",
+            svg.append(String.format(
+                    "  <text x=\"%.1f\" y=\"%d\" class=\"axis-text\" text-anchor=\"middle\">%s</text>\n",
                     labelX, paddingTop + chartHeight + 25, xLabels[g]));
         }
 
@@ -449,11 +454,13 @@ public class MainActivity extends AppCompatActivity {
             String color = String.format("#%06X", (0xFFFFFF & seriesColors[s]));
 
             // 图例色块
-            svg.append(String.format("  <rect x=\"%d\" y=\"%d\" width=\"15\" height=\"15\" fill=\"%s\"/>\n",
+            svg.append(String.format(
+                    "  <rect x=\"%d\" y=\"%d\" width=\"15\" height=\"15\" fill=\"%s\"/>\n",
                     legendX, itemY, color));
 
             // 图例文字
-            svg.append(String.format("  <text x=\"%d\" y=\"%d\" class=\"legend-text\">%s</text>\n",
+            svg.append(String.format(
+                    "  <text x=\"%d\" y=\"%d\" class=\"legend-text\">%s</text>\n",
                     legendX + 22, itemY + 12, seriesNames[s]));
         }
 
@@ -461,7 +468,6 @@ public class MainActivity extends AppCompatActivity {
 
         return svg.toString();
     }
-
     /**
      * 获取数据最大值
      */

@@ -408,9 +408,11 @@ public class MainActivity extends AppCompatActivity {
         canvas.drawText(xAxisLabel, outputWidth / 2f, outputHeight - 25f, labelPaint);
 
         canvas.save();
-        canvas.rotate(-90, 40f, outputHeight / 2f);
-        canvas.drawText(yAxisLabel, 40f, outputHeight / 2f, labelPaint);
+        float contentLeft = barChart.getViewPortHandler().contentLeft();
+        float contentTop = barChart.getViewPortHandler().contentTop();
         canvas.restore();
+        labelPaint.setTextAlign(Paint.Align.LEFT);
+        canvas.drawText(yAxisLabel, contentLeft + 5f, Math.max(40f, contentTop - 20f), labelPaint);
     }
 
     /**
@@ -465,8 +467,8 @@ public class MainActivity extends AppCompatActivity {
                 "  <text x=\"%d\" y=\"%d\" class=\"label-text\" text-anchor=\"middle\">%s</text>\n",
                 paddingLeft + chartWidth / 2, paddingTop + chartHeight + 45, escapeXml(xAxisLabel)));
         svg.append(String.format(
-                "  <text x=\"%d\" y=\"%d\" class=\"label-text\" text-anchor=\"middle\" transform=\"rotate(-90 %d %d)\">%s</text>\n",
-                paddingLeft - 55, paddingTop + chartHeight / 2, paddingLeft - 55, paddingTop + chartHeight / 2, escapeXml(yAxisLabel)));
+                "  <text x=\"%d\" y=\"%d\" class=\"label-text\" text-anchor=\"middle\">%s</text>\n",
+                paddingLeft, paddingTop - 20, escapeXml(yAxisLabel)));
 
         // 绘制网格线
         float maxValue = yAxisMax > 0 ? yAxisMax : getMaxValue();

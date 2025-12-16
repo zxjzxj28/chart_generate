@@ -174,15 +174,6 @@ public class MainActivity extends AppCompatActivity {
         chart.getDescription().setYOffset(-12f * density);
         chart.post(() -> chart.getDescription().setPosition(chart.getWidth() / 2f, 24f * density));
 
-//        float density = getResources().getDisplayMetrics().density;
-//        barChart.getDescription().setEnabled(true);
-//        barChart.getDescription().setText(chartTitle);
-//        barChart.getDescription().setTextColor(Color.DKGRAY);
-//        barChart.getDescription().setTextSize(12f);
-//        barChart.getDescription().setYOffset(-12f * density);
-//        barChart.post(() -> barChart.getDescription().setPosition(barChart.getWidth() / 2f, 24f * density));
-        barChart.getDescription().setEnabled(false);
-        barChart.getDescription().setText("");
         // X轴设置
         XAxis xAxis = chart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
@@ -194,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
         xAxis.setTextColor(Color.DKGRAY);
         xAxis.setValueFormatter(new IndexAxisValueFormatter(spec.xLabels));
         xAxis.setLabelRotationAngle(0f);
-        xAxis.setCenterAxisLabels(true);
+        xAxis.setCenterAxisLabels(spec.seriesNames.length > 1);
 
         // 左侧Y轴设置
         YAxis leftAxis = chart.getAxisLeft();
@@ -263,20 +254,28 @@ public class MainActivity extends AppCompatActivity {
         // 创建BarData
         BarData barData = new BarData(dataSets.toArray(new BarDataSet[0]));
 
-        // 分组柱状图参数
-        float groupSpace = 0.20f;  // 组间距
-        float barSpace = 0.02f;    // 柱间距
-        float barWidth = (1f - groupSpace) / seriesCount - barSpace;
+        if (seriesCount > 1) {
+            // 分组柱状图参数
+            float groupSpace = 0.20f;  // 组间距
+            float barSpace = 0.02f;    // 柱间距
+            float barWidth = (1f - groupSpace) / seriesCount - barSpace;
 
-        barData.setBarWidth(barWidth);
-        chart.setData(barData);
+            barData.setBarWidth(barWidth);
+            chart.setData(barData);
 
-        // 设置X轴范围
-        chart.getXAxis().setAxisMinimum(0f);
-        chart.getXAxis().setAxisMaximum(groupCount);
+            // 设置X轴范围
+            chart.getXAxis().setAxisMinimum(0f);
+            chart.getXAxis().setAxisMaximum(groupCount);
 
-        // 分组柱状图
-        chart.groupBars(0f, groupSpace, barSpace);
+            // 分组柱状图
+            chart.groupBars(0f, groupSpace, barSpace);
+        } else {
+            // 单系列无需分组，使用居中条形宽度
+            barData.setBarWidth(0.6f);
+            chart.setData(barData);
+            chart.getXAxis().setAxisMinimum(-0.5f);
+            chart.getXAxis().setAxisMaximum(groupCount - 0.5f);
+        }
 
         // 刷新图表
         chart.invalidate();

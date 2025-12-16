@@ -43,17 +43,17 @@ public class MainActivity extends AppCompatActivity {
 
     // X轴标签（年份/类别）
     private final String[] xLabels = {
-            "1990年", "1991年", "1992年", "1993年", "1994年",
+            "2021年", "2022年", "2023年", "2024年",
 //            "1995年", "1996年", "1997年", "1998年", "1999年"
     };
 
     // 图表标题和轴标签
-    private final String chartTitle = "公司业绩对比（1990-1994）";
+    private final String chartTitle = "公司年度业绩对比（1990-1994）";
     private final String xAxisLabel = "年份";
     private final String yAxisLabel = "销售额";
 
     // 数据系列名称（图例显示）
-    private final String[] seriesNames = {"公司A", "公司B", "公司C"};
+    private final String[] seriesNames = {"公司A", "公司B"};
 
     // 数据系列颜色 (学术论文配色 - 低饱和度、高对比度、适合黑白打印)
     private final int[] seriesColors = {
@@ -65,13 +65,13 @@ public class MainActivity extends AppCompatActivity {
     // 各系列数据值 - 每行对应一个系列，列数需与xLabels长度一致
     private final float[][] seriesData = {
             // 公司A数据
-            {10f, 43f, 79f, 82f, 44f},
+            {10f, 43f, 79f, 82f},
 //            {10f, 43f, 79f, 82f, 44f, 12f, 18f, 30f, 17f, 11f},
             // 公司B数据
-            {39f, 7f, 55f, 26f, 80f},
+            {39f, 7f, 55f, 26f},
 //            , 51f, 58f, 47f, 9f, 40f
             // 公司C数据
-            {13f, 55f, 33f, 96f, 42f}
+            {13f, 55f, 33f, 96f}
 //            61f, 25f, 41f, 48f, 17f
     };
 
@@ -128,14 +128,15 @@ public class MainActivity extends AppCompatActivity {
         barChart.setExtraBottomOffset(40f);
         barChart.setExtraRightOffset(50f);
 
-        float density = getResources().getDisplayMetrics().density;
-        barChart.getDescription().setEnabled(true);
-        barChart.getDescription().setText(chartTitle);
-        barChart.getDescription().setTextColor(Color.DKGRAY);
-        barChart.getDescription().setTextSize(12f);
-        barChart.getDescription().setYOffset(-12f * density);
-        barChart.post(() -> barChart.getDescription().setPosition(barChart.getWidth() / 2f, 24f * density));
-
+//        float density = getResources().getDisplayMetrics().density;
+//        barChart.getDescription().setEnabled(true);
+//        barChart.getDescription().setText(chartTitle);
+//        barChart.getDescription().setTextColor(Color.DKGRAY);
+//        barChart.getDescription().setTextSize(12f);
+//        barChart.getDescription().setYOffset(-12f * density);
+//        barChart.post(() -> barChart.getDescription().setPosition(barChart.getWidth() / 2f, 24f * density));
+        barChart.getDescription().setEnabled(false);
+        barChart.getDescription().setText("");
         // X轴设置
         XAxis xAxis = barChart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);

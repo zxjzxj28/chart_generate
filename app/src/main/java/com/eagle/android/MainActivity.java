@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
     };
 
     // 图表标题和轴标签
-    private final String chartTitle = "公司年度业绩对比（1990-1994）";
+    private final String chartTitle = "公司年度业绩对比";
     private final String xAxisLabel = "年份";
     private final String yAxisLabel = "销售额";
 
@@ -202,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
 
             BarDataSet dataSet = new BarDataSet(entries, seriesNames[s]);
             dataSet.setColor(seriesColors[s]);
-            dataSet.setDrawValues(false);  // 不显示柱子上的数值
+            dataSet.setDrawValues(true);  // 不显示柱子上的数值
             dataSets.add(dataSet);
         }
 
@@ -412,8 +412,18 @@ public class MainActivity extends AppCompatActivity {
         float contentLeft = barChart.getViewPortHandler().contentLeft();
         float contentTop = barChart.getViewPortHandler().contentTop();
         canvas.restore();
+
+// 可调参数：想更靠左就把 xOffset 调得更负；想更靠上就把 yOffset 调得更负
+        float xOffset = -80f;   // 往左 80px（你可以改成 -60/-100）
+        float yOffset = -35f;   // 往上 35px（你可以改成 -20/-50）
+
         labelPaint.setTextAlign(Paint.Align.LEFT);
-        canvas.drawText(yAxisLabel, contentLeft + 5f, Math.max(40f, contentTop - 20f), labelPaint);
+        canvas.drawText(
+                yAxisLabel,
+                Math.max(10f, contentLeft + xOffset),   // 防止画到画布外太多
+                Math.max(40f, contentTop + yOffset),
+                labelPaint
+        );
     }
 
     /**
